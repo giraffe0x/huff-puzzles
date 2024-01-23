@@ -10,7 +10,7 @@
 
 #define macro MAIN() = takes(0) returns(0) {
     // get msg.value from calldata?
-    0x00 callvalue  // [msg.value]
+    callvalue       // [msg.value]
 
     // store it in memory at offset 0
     0x00            // [0, msg.value]

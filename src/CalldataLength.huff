@@ -10,7 +10,7 @@
 
 #define macro MAIN() = takes(0) returns(0) {
     // Push calldata length to stack
-    0x00 calldatasize // [calldatasize]
+    calldatasize    // [calldatasize]
 
     // Store calldata length in memory at offset 0
     0x00            // [0, calldatasize]
