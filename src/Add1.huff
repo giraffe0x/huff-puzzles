@@ -1,9 +1,9 @@
 
-/** 
+/**
  *  ADD HUFF EXERCISE
  *
  *  When writing solidity, we most times have to perform some mathematical operations like addition etc
- *  
+ *
  *  The task is to write within the `MAIN` macro below, a function that takes in a uint256, adds 1 to it and returns the new value
  *
  *  NOTICE: The contract should revert when an unrecognized function is called
@@ -13,5 +13,41 @@
 
 
 #define macro MAIN() = takes(0) returns(0) {
+    // Push first 4 bytes of calldata to stack
+    0x00 calldataload   // [calldata @ 0x00]
+    0xE0 shr            // [func_sig] // Shift right by 224 bits
 
+    // Compare the first 4 bytes of calldata to the first 4 bytes of add1
+    __FUNC_SIG(add1)    // [add1_sig, func_sig]
+    eq                  // [add1_sig == func_sig] // If equal push 1, else push 0
+
+    // If equal, jump to add1
+    add1 jumpi
+
+    // Else, revert
+    0x00 0x00 revert
+
+    // Create jump label
+    add1:
+        // Push first 32 bytes (offset 4) of calldata to stack
+        0x04 calldataload   // [input_num]
+        ADD_1()             // [result]
+
+
+    // Store value in memory offset 0
+    0x00 mstore          // []
+
+    // Return the value at memory offset 0
+    0x20  // [32]
+    0x00  // [0, 32]
+    return
+}
+
+#define macro ADD_1() = takes(1) returns (1) {
+    // [input_num]
+
+    // Push 1 to the value at the top of the stack
+    0x01                // [1, input_num]
+    // Add
+    add                 // [result]
 }
