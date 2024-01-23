@@ -11,14 +11,14 @@
 #define macro MAIN() = takes(0) returns(0) {
     // get msg.value from callvalue
     callvalue       // [msg.value]
-    isZero          // [msg.value == 0]
+    iszero          // [msg.value == 0]
 
     // if msg.value is not zero, revert
     value_is_zero jumpi
     0x00 0x00 revert
 
     value_is_zero:
-      0x01 
+      0x01
 
     // Store value in memory offset 0
     0x00 mstore          // []
