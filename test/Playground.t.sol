@@ -7,7 +7,7 @@ import {HuffDeployer} from "foundry-huff/HuffDeployer.sol";
 import {NonMatchingSelectorHelper} from "./test-utils/NonMatchingSelectorHelper.sol";
 
 interface Playground {
-    function multiply(uint256 num1, uint256 num2) external pure returns (uint256);
+    // function multiply(uint256 num1, uint256 num2) external pure returns (uint256);
 }
 
 
@@ -18,9 +18,10 @@ contract PlaygroundTest is Test {
         playground = Playground(HuffDeployer.config().deploy("Playground"));
     }
 
-    function testMultiply() public {
+    function testPlayground() public {
       // vm.expectRevert();
-      uint256 result = playground.multiply(2, 3);
-      console.log("result: %s", result);
+      (bool success, bytes memory data) = address(playground).call("");
+      console.log("success", success);
+      console.logBytes(data);
     }
 }

@@ -1,63 +1,32 @@
 
+#define macro ONLY_HUFF() = takes(0) returns(1) {
+  0x4F6E6C792048756666
+}
 
-#define function result1Int(uint256) payable returns(uint256)
-#define function multiply(uint256, uint256) payable returns(uint256)
+
+
+#define macro RIGHTPAD() = takes(1) returns(1) {
+  // 0x4F6E6C792048756666
+  // 0x000000000000000000ffffffffffffffffffffffffffffffffffffffffffffff
+  0xffffffffffffffffff0000000000000000000000000000000000000000000000
+  0x0000000000000000000000000000000000000000000000000000000000000000
+  and
+}
 
 
 #define macro MAIN() = takes(0) returns(0) {
-    // Push first 4 bytes of calldata to stack
-    0x00 calldataload   // [calldata @ 0x00]
-    0xE0 shr            // [func_sig] // Shift right by 224 bits
+    // what where how
+    // Offset
+    0x20 0x00 mstore
 
-    // Compare the first 4 bytes of calldata to the first 4 bytes of multiply
-    __FUNC_SIG(multiply)    // [multiply_sig, func_sig]
-    eq                      // [multiply_sig == func_sig]
+    // Store length
+    0x09 0x20 mstore
 
-    // If equal, jump to multiply
-    multiply jumpi
+    // Store error message
+    __RIGHTPAD(0x4F6E6C792048756666)
+    0x40
+    mstore
 
-    // Else, revert
-    0x00 0x00 revert
-
-    // Create jump label
-    multiply:
-        // Push first 32 bytes (offset 4) of calldata to stack
-        0x04 calldataload   // [a]
-        0x24 calldataload   // [a, b]
-        MULTIPLY()          // [result]
-
-
-    // Store value in memory offset 0
-    0x00 mstore          // []
-
-    // Return the value at memory offset 0
-    0x20  // [32]
-    0x00  // [0, 32]
-    return
-}
-
-#define macro MULTIPLY() = takes(2) returns (1) {
-    // [b, a]
-
-    // Check that b = 0
-    dup1            // [b, b, a]
-    iszero          // [b == 0, b, a]
-    normalMul jumpi
-
-    // check that a == (a * b) / b
-    // [b, a]
-    dup2            // [a, b, a]
-    dup2            // [b, a, b, a]
-    dup2            // [a, b, a, b, a]
-    dup2            // [b, a, b, a, b, a]
-    mul             // [a * b, b, a, b, a]
-    div             // [(a * b) / b, a, b, a]
-    eq              // [(a * b) / b == a, b, a]
-    normalMul jumpi
-
-    0x00 0x00 revert
-
-    normalMul:
-      // [b, a]
-      mul             // [a * b]
+    // Revert with error message
+    0x60 0x00 revert
 }

@@ -4,14 +4,36 @@
  *
  *
  *  When a transaction is being executed within a smart contract, based on the logic of that contract, it can revert if a preset condition is not met.
- *  They're 2 main ways to revert in solidity, 
+ *  They're 2 main ways to revert in solidity,
  *  - using a string error message e,g (`require(x != 0, "Only values above 0");`)
  *  - reverting with a custom error e.g (`if(x == 0) revert OnlyValuesAbove0();`)
  *
  *  The task is to write within the `MAIN` macro below, huff code that reverts (all the time) with the string error message `Only Huff`
 */
 
+// "Only Huff" = 4F6E6C792048756666
+// length = 9
+
+#define macro ONLY_HUFF() = takes(0) returns(1) {
+  0x4F6E6C792048756666
+}
+
+
+// #define constant __RIGHTPAD = 0xffffffffffffffffff0000000000000000000000000000000000000000000000
 
 #define macro MAIN() = takes(0) returns(0) {
-    
+    // what where how
+    // Offset
+    0x20 0x00 mstore
+
+    // Store length
+    0x09 0x20 mstore
+
+    // Store error message
+    __RIGHTPAD(0x4F6E6C792048756666)
+    0x40
+    mstore
+
+    // Revert with error message
+    0x60 0x00 revert
 }
