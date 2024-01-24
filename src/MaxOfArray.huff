@@ -1,7 +1,7 @@
 
-/** 
+/**
  *  MAX_OF_ARRAY HUFF EXERCISE
- *  
+ *
  *  In this task, Given an abi encoded array of uint256, return its maximum value. Revert if the array is empty.
  *
  *  NOTICE: The contract should revert when an unrecognized function is called
@@ -10,5 +10,76 @@
 #define function maxOfArray(uint256[]) payable returns(uint256)
 
 #define macro MAIN() = takes(0) returns(0) {
-   
+   0x00 calldataload
+   0xE0 shr
+
+    __FUNC_SIG(maxOfArray)
+    eq
+
+    maxOfArray jumpi
+
+    0x00 0x00 revert
+
+    maxOfArray:
+      // revert if array is empty
+      0x04 calldataload             // [offset]
+      dup1                          // [offset, offset]
+      0x04 add                      // [offset + 0x04, offset]
+      calldataload                  // [length, offset]
+      dup1                          // [length, length, offset]
+      iszero                        // [length = 0, length, offset]
+      zero_length jumpi
+
+      // state = [length, offset]
+      0x00                          // [index0, length, offset]
+      0x00                          // [accum0, index0, length, offset]
+      dup4                          // [offset, accum0, index0, length, offset]
+      0x04 add                      // [offset + 0x04, accum0, index0, length, offset]
+      swap1                         // [accum0, firstWordPointer, index0, length, offset]
+
+
+      loop:
+        // increment firstWordPointer
+        dup2                      // [firstWordPointer, accum0, firstWordPointer, index0, length, offset]
+        0x20 add                  // [realFirstWordPointer + 0x20, accum0, firstWordPointer, index0, length, offset]
+        swap2                    // [firstWordPointer, accum0, realFirstWordPointer + 0x20, index0, length, offset]
+        pop                       // [accum0, realFirstWordPointer, index0, length, offset]
+
+        // increment index
+        dup3                      // [index0, accum0, realFirstWordPointer, index0, length, offset]
+        0x01 add                  // [index1, accum0, realFirstWordPointer, index0, length, offset]
+        swap3                     // [index0, accum0, realFirstWordPointer, index1, length, offset]
+        pop                       // [accum0, realFirstWordPointer, index1, length, offset]
+
+        dup2                       // [firstWordPointer, accum0, firstWordPointer, index1, length, offset]
+        calldataload               // [firstWord, accum0, firstWordPointer, index1, length, offset]
+        dup2                       // [accum0, firstWord, accum0, firstWordPointer, index1, length, offset]
+        dup2                       // [firstWord, accum0, firstWord, firstWord, accum0, firstWordPointer, index1, length, offset]
+        gt                         // [firstWord > accum0, firstWord, accum0, firstWordPointer, index1, length, offset]
+        store jumpi                // [firstWord, accum0, firstWordPointer, index1, length, offset]
+
+        // if accum > firstWord, throw away firstWord
+        pop                        // [accum0, firstWordPointer, index1, length, offset]
+        dup4                       // [length, accum0, firstWordPointer, index1, length, offset]
+        dup4                       // [index1, length, accum0, firstWordPointer, index1, length, offset]
+        lt                         // [index1 < length, length, accum0, firstWordPointer, index1, length, offset]
+        loop jumpi
+        0x00 mstore
+        0x20 0x00 return
+
+
+        // state = [firstWord, accum0, firstWordPointer, index1, length, offset]
+        store:
+          swap1                   // [accum0, firstWord, firstWordPointer, index1, length, offset]
+          pop                     // [firstWord, firstWordPointer, index1, length, offset]
+          // check if index less than length
+          dup4                    // [length, firstWord, firstWordPointer, index1, length, offset]
+          dup4                   // [index1, length, firstWord, firstWordPointer, index1, length, offset]
+          lt                     // [index1 < length, length, firstWord, firstWordPointer, index1, length, offset]
+          loop jumpi
+          0x00 mstore
+          0x20 0x00 return
+
+      zero_length:
+        0x00 0x00 revert
 }
