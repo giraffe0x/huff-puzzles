@@ -1,32 +1,70 @@
 
-#define macro ONLY_HUFF() = takes(0) returns(1) {
-  0x4F6E6C792048756666
-}
+/**
+ *  SUM_ARRAY HUFF EXERCISE
+ *
+ *
+ *  The task is to write within the `MAIN` macro below, write a functionality that takes an array of uint256 as an argument and returns the sum of all the numbers
+ *
+ *  NOTICE: The contract should revert when an unrecognized function is called
+ */
 
-
-
-#define macro RIGHTPAD() = takes(1) returns(1) {
-  // 0x4F6E6C792048756666
-  // 0x000000000000000000ffffffffffffffffffffffffffffffffffffffffffffff
-  0xffffffffffffffffff0000000000000000000000000000000000000000000000
-  0x0000000000000000000000000000000000000000000000000000000000000000
-  and
-}
+#define function sumArray(uint256[]) payable returns(uint256)
 
 
 #define macro MAIN() = takes(0) returns(0) {
-    // what where how
-    // Offset
-    0x20 0x00 mstore
+    0x00 calldataload
+    0xE0 shr
 
-    // Store length
-    0x09 0x20 mstore
+    __FUNC_SIG(sumArray)
+    eq sumArray jumpi
 
-    // Store error message
-    __RIGHTPAD(0x4F6E6C792048756666)
-    0x40
-    mstore
+    0x00 0x00 revert
 
-    // Revert with error message
-    0x60 0x00 revert
+    sumArray:
+      SUM_ARRAY()
+}
+
+#define macro SUM_ARRAY() = takes(0) returns (0) {
+
+    // get offset
+    0x04 calldataload   // [offset]
+    // get length
+    0x24 calldataload   // [length, offset]
+
+    // if length is 0, return 0
+    dup1               // [length, length, offset]
+    0x00 eq            // [length==0, length, offset]
+    zero_length jumpi  // [length, offset]
+
+    // else loop and add
+    0x00                // [index0, length, offset]
+    0x00                // [accum0, index0, length, offset]
+    dup4                // [offset, accum0, index0, length, offset]
+    0x20 0x04 add add   // [offset+24, accum0, index0, length, offset]
+    swap1               // [accum0, firstWordPointer, index0, length, offset]
+
+    loopAdd:
+      dup2            // [firstWordPointer, accum0, firstWordPointer, index0, length, offset]
+      calldataload    // [firstWord, accum0, firstWordPointer, index0, length, offset]
+      add             // [accum0+firstWord, firstWordPointer, index0, length, offset]
+      // increment word pointer
+      dup2 0x20 add   // [2ndWordPointer, accum0+firstWord, firstWordPointer, index0, length, offset]
+      swap2           // [firstWordPointer, accum0+firstWord, 2ndWordPointer, index0, length, offset]
+      pop            // [accum0+firstWord, 2ndWordPointer, index0, length, offset]
+      // increment index
+      dup3 0x01 add   // [index1, accum0+firstWord, 2ndWordPointer, index0, length, offset]
+      swap3 pop       // [accum0+firstWord, 2ndWordPointer, index1, length, offset]
+      // check if index < length
+      dup4 dup4      // [index1, length, accum0+firstWord, 2ndWordPointer, index1, length, offset]
+
+      lt loopAdd jumpi
+
+      // return
+      0x00 mstore
+      0x20 0x00 return
+
+      zero_length:
+        // pop pop
+        0x00 mstore
+        0x20 0x00 return
 }
