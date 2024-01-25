@@ -1,6 +1,6 @@
-/** 
+/**
  *  BASIC_BANK HUFF EXERCISE
- *  
+ *
  *  The task is to create a basic bank with huff
  * functionalities include
  *      - depositing tokens via similar to how solidity's `receive` function works
@@ -12,5 +12,61 @@
 #define function withdraw(uint256) payable returns()
 
 #define macro MAIN() = takes(0) returns(0) {
+    0x00 calldataload 0xe0 shr //
+    dup1
+    __FUNC_SIG(balanceOf) eq balance_of jumpi
+    __FUNC_SIG(withdraw) eq withdraw jumpi
 
+    callvalue
+    caller  // [msg.sender, msg.value]
+    sload   // [balance, msg.value]
+    add     // [balance + msg.value]
+    caller  // [msg.sender, balance + msg.value]
+    sstore  // []
+    stop
+
+    balance_of:
+      0x04 calldataload // [address]
+      sload             // [balance]
+      0x00 mstore 0x20 0x00 return
+
+    withdraw:
+      // must check that msg.sender balance > amt, otherwise revert
+      caller // [msg.sender]
+      sload  // [balance]
+      0x04 calldataload // [withdraw_amt, balance]
+      dup1 // [withdraw_amt, balance, withdraw_amt]
+      dup2 // [balance, withdraw_amt, balance, withdraw_amt]
+      gt     // [balance > withdraw_amt]
+      go_withdraw jumpi
+      // [balance, withdraw_amt]
+      eq go_withdraw jumpi
+      0x00 0x00 revert
+
+          go_withdraw: // []
+            // reduce msg.sender stored balance
+            caller // [msg.sender]
+            sload  // [balance]
+            0x04 calldataload // [withdraw_amt, balance]
+            swap1 // [balance, withdraw_amt]
+            sub // [balance - withdraw_amt]
+            caller // [msg.sender, balance - withdraw_amt]
+            sstore // []
+
+            // send ether to msg.sender
+            0x00 // [retsize]
+            0x00 // [retOffset, retSisze]
+            0x00 // [argsOffset, argsSize, retOffset, retSize]
+            0x00 // [value, argsOffset, argsSize, retOffset, retSize]
+            0x04 calldataload // [value, argsOffset, argsSize, retOffset, retSize]
+            caller // [to, value, argsOffset, argsSize, retOffset, retSize]
+            0x00 // [gas, to, value, argsOffset, argsSize, retOffset, retSize]
+            call // []
+            
+            // need to return?
+
+
+      // get balance
+      // deduct withdraw amt from balance
+      // send withdraw amt to msg.sender
 }
