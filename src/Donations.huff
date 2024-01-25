@@ -8,5 +8,20 @@
 #define function donated(address) payable returns(uint256)
 
 #define macro MAIN() = takes(0) returns(0) {
-    // if msg.value > 0, store to a mapping
+    0x00 calldataload 0xe0 shr //
+    __FUNC_SIG(donated) eq getDonations jumpi
+
+    callvalue
+
+    caller  // [msg.sender, msg.value]
+    sload   // [balance, msg.value]
+    add     // [balance + msg.value]
+    caller  // [msg.sender, balance + msg.value]
+    sstore  // []
+    // 0x00 mstore 0x20 0x00 return
+
+    getDonations:
+      0x04 calldataload // [address]
+      sload             // [balance]
+      0x00 mstore 0x20 0x00 return
 }
