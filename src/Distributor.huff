@@ -1,7 +1,7 @@
- 
-/** 
+
+/**
  *  DISTRIBUTE HUFF EXERCISE
- *  
+ *
  *  The task is to enable this contract, when called with function `distribute(address[])` to
  *  distribute the value sent with the call to each address in the address array as evenly.
  *  Revert if array length is 0
@@ -14,5 +14,53 @@
 
 
  #define macro MAIN() = takes(0) returns(0) {
-   
+    0x00 calldataload 0xe0 shr //
+    __FUNC_SIG(distribute) eq distribute jumpi
+    0x00 0x00 revert
+
+    distribute:
+        callvalue           // [value]
+        0x24 calldataload   // [len, value]
+        dup1
+        iszero zero_len jumpi
+        0x00                // [index0, len, value]
+
+        // state [index0, len, value]
+        loop:
+          // increment index
+          0x01 add          // [index1, len, value]
+
+          // get address
+          dup1 0x20 mul         // [0x20, index1, len, value]
+          0x24 add calldataload // [address, index1, len, value]
+          send_ether jumpi
+          loop jump
+
+        zero_len:
+          0x00 0x00 revert
+
+        // [address, index1, len, value]
+        send_ether:
+            swap1 // [index1, address, len, value]
+            swap3 // [value, address, len, index1]
+            swap1 // [address, value, len, index1]
+            0x00 // [retsize, address, value, len, index1]
+            0x00 // [retOffset, retSisze, address, value, len, index1]
+            0x00 // [argsSize, retOffset, retSisze, address, value, len, index1]
+            0x00 // [argsOffset, argsSize, retOffset, retSisze, address, value, len, index1]
+            swap6 // [value, argsOffset, argsSize, retOffset, retSisze, address, len, index1]
+            dup1 // [value, value, argsOffset, argsSize, retOffset, retSisze, address, len, index1]
+
+            // divide value by length
+            dup7 // [len, value, argsOffset, argsSize, retOffset, retSisze, address, len, index1]
+            swap1 // [value, len, argsOffset, argsSize, retOffset, retSisze, address, len, index1]
+            div   // [value/len, argsOffset, argsSize, retOffset, retSisze, address, len, index1]
+
+            swap1 // [argsOffset, value, argsSize, retOffset, retSisze, address, len, index1]
+            swap5 // [address, value, argsSize, retOffset, retSisze, argsOffset, len, index1]
+            0x00 // [gas, address, value, argsSize, retOffset, retSisze, argsOffset, len, index1]
+            call // [success?, len, index1]
+            pop
+            callvalue  // [value, len, index1]
+            swap2 // [index1, len, value]
  }

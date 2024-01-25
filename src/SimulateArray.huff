@@ -1,15 +1,15 @@
 
-/** 
+/**
  *  SUM_ARRAY HUFF EXERCISE
  *
- * In this puzzle, the task is to simulate an array in Huff using the "exact" storage pattern as solidity. Expected functions can; 
- *      - Push numbers onto a array, 
+ * In this puzzle, the task is to simulate an array in Huff using the "exact" storage pattern as solidity. Expected functions can;
+ *      - Push numbers onto a array,
  *      - Pop the last index from the array,
- *      - View what's stored at an index, 
- *      - Gets the length of the array, 
+ *      - View what's stored at an index,
+ *      - Gets the length of the array,
  *      - Write to an index if it is valid.
  *
- *      - Writes and reads outside of length revert. 
+ *      - Writes and reads outside of length revert.
  *      - Popping off a zero length array reverts.
  *
  *  NOTICE: The contract should revert when an unrecognized function is called
@@ -24,6 +24,163 @@
  #define error OutOfBounds()
  #define error ZeroArray()
 
+ #define constant ARRAY = FREE_STORAGE_POINTER() //0
+
  #define macro MAIN() = takes(0) returns(0) {
-    
+    0x00 calldataload 0xe0 shr
+    dup1  __FUNC_SIG(pushh) eq push_call jumpi
+    dup1  __FUNC_SIG(popp) eq pop_call jumpi
+    dup1  __FUNC_SIG(read) eq read_call jumpi
+    dup1  __FUNC_SIG(length) eq length_call jumpi
+    dup1  __FUNC_SIG(write) eq write_call jumpi
+    0x00 0x00 revert
+
+    push_call:
+      PUSH()
+      finish jump
+
+    pop_call:
+      POP()
+      finish jump
+
+    read_call:
+      READ()
+      finish jump
+
+    length_call:
+      LENGTH()
+      finish jump
+
+    write_call:
+      WRITE()
+      finish jump
+
+    outOfBounds:
+        __ERROR(OutOfBounds)
+        0x00 mstore 0x04 0x00 revert
+    zeroArray:
+        __ERROR(ZeroArray)
+        0x00 mstore 0x04 0x00 revert
+
+    finish:
+ }
+
+#define macro WRITE() = takes(0) returns(0) {
+    // get hash of array slot e.g. slot0 = hash(0); this is where first element is stored
+    [ARRAY]                   // [pointer]
+    0x00 mstore               // []
+    0x20 0x00                 // [memOffset, size]
+    sha3                      // [hash]
+
+    // get length of array; stored at slot0 (ARRAY)
+    [ARRAY] sload             // [length, hash]
+
+    // if index is greater or equal than length, revert
+    0x04 calldataload         // [index, length, hash]
+    swap1                    // [length, index, hash]
+    gt                      // [length > index, hash]
+    iszero outOfBounds jumpi
+
+    // calculate where to insert new element, at hash + index
+    0x04 calldataload         // [index, hash]
+    dup2                     // [hash, index, hash]
+    add                      // [targetStorageSlot, hash]
+
+    // store new element at newStorageSlot
+    0x24 calldataload      // [arg, newStorageSlot, hash]
+    swap1                  // [newStorageSlot, arg, hash]
+    sstore                 // [hash]
+}
+
+#define macro LENGTH() = takes(0) returns(0) {
+    // get length of array; stored at slot0 (ARRAY)
+    [ARRAY] sload
+    0x00 mstore
+    0x20 0x00 return
+}
+
+ #define macro READ() = takes(0) returns(0) {
+     // get hash of array slot e.g. slot0 = hash(0); this is where first element is stored
+    [ARRAY]                   // [pointer]
+    0x00 mstore               // []
+    0x20 0x00                 // [memOffset, size]
+    sha3                      // [hash]
+
+    // get length of array; stored at slot0 (ARRAY)
+    [ARRAY] sload             // [length, hash]
+
+    // get index of element to read
+    0x04 calldataload         // [index, length, hash]
+
+    // check if index is within bounds
+    dup1                      // [index, index, length, hash]
+    dup3                     //  [length, index, index, length, hash]
+    swap1                     //  [index, length, index, length, hash]
+    lt                        // [index < length, index, length, hash]
+    iszero outOfBounds jumpi
+    // [index, length, hash]
+
+    // get storage slot of element; hash + index
+    dup3                      // [hash, index, length, hash]
+    add                      // [targetStorageSlot, length, hash]
+    sload                     // [element, length, hash]
+    0x00 mstore               // [length, hash]
+    0x20 0x00 return
+ }
+
+ #define macro PUSH() = takes(0) returns(0) {
+    // get hash of array slot e.g. slot0 = hash(0); this is where first element is stored
+    [ARRAY]                   // [pointer]
+    0x00 mstore               // []
+    0x20 0x00                 // [memOffset, size]
+    sha3                      // [hash]
+
+    // get length of array; stored at slot0 (ARRAY)
+    [ARRAY] sload             // [length, hash]
+
+    // calculate where to insert new element, at hash + length
+    dup1                      // [length, length, hash]
+    swap2                    // [hash, length, length]
+    add                      // [newStorageSlot, length]
+
+    // store new element at newStorageSlot
+    0x04 calldataload      // [arg, newStorageSlot, length]
+    swap1                  // [newStorageSlot, arg, length]
+    sstore                 // [length]
+
+    // increment length and store
+    0x01 add               // [0x01 + length]
+    [ARRAY]                // [pointer, newLength]
+    sstore                 // []
+ }
+
+ #define macro POP() = takes(0) returns(0) {
+      // get hash of array slot
+      [ARRAY]                   // [pointer]
+      0x00 mstore               // []
+      0x20 0x00                 // [memOffset, size]
+      sha3                      // [hash]
+
+      // If length is 0, revert
+      [ARRAY] sload             // [length, hash]
+      iszero zeroArray jumpi
+
+      // get location of last element
+      [ARRAY] sload             // [length, hash]
+      0x01                      // [1, length, hash]
+      swap1                     // [length, 1, hash]
+      sub                       // [length -1, hash]
+      add                       // [lastElementLocation]
+
+      // write 0 to last element
+      0x00                      // [0, lastElementLocation]
+      swap1                     // [lastElementLocation, 0]
+      sstore                    // []
+
+      // decrement length and store -- do I need to do this?
+      0x01                    // [0x01]
+      [ARRAY] sload            // [length, 0x01]
+      sub                     // [length - 1]
+      [ARRAY]                 // [pointer, newLength]
+      sstore                   // []
  }
