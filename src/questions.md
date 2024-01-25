@@ -3,3 +3,7 @@
 2) contract.call(abi.encode(data)); Assume data is of type bytes, does this always have offset and length included? If no then for the keccak problem how to know whether to extract offset and length?
 
 3) Refer Create.huff. Init code without free memory pointer allocation
+
+4) SendEther.huff, does it matter how much gas is sent? same for contract creation
+
+5) SendEther.huff, what is retSize, argSize, offset etc?
